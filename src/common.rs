@@ -77,7 +77,6 @@ pub const fn compute_blending_matrix_c<const N: usize>(cumulative: bool) -> [[f6
 pub fn compute_blending_matrix(n: usize, cumulative: bool) -> na::DMatrix<f64> {
     let mut m = na::DMatrix::zeros(n, n);
     let factorial = (1..n).reduce(|acc, e| acc * e).unwrap() as f64;
-    // let factorial = 1.0;
     for i in 0..n {
         for j in 0..n {
             let sum: f64 = (j..n)
@@ -101,9 +100,50 @@ pub fn compute_blending_matrix(n: usize, cumulative: bool) -> na::DMatrix<f64> {
     m
 }
 
+pub fn compute_base_coefficients(n: usize) -> na::DMatrix<f64> {
+    let mut base_coefficients = na::DMatrix::zeros(n, n);
+    base_coefficients.row_mut(0).add_scalar_mut(1.0);
+    let deg = n - 1;
+    let mut order = deg;
+    for row in 1..n {
+        for i in (deg - order)..n {
+            base_coefficients[(row, i)] =
+                (order + i - deg) as f64 * base_coefficients[(row - 1, i)];
+        }
+        order -= 1;
+    }
+    base_coefficients
+}
+
+pub const fn compute_base_coefficients_c<const N: usize>() -> [[f64; N]; N] {
+    let mut base_coefficients = [[0.0; N]; N];
+    let mut col = 0;
+    while col < N {
+        base_coefficients[0][col] = 1.0;
+        col += 1;
+    }
+    let deg = N - 1;
+    let mut order = deg;
+
+    let mut row = 1;
+    while row < N {
+        let mut i = deg - order;
+        while i < N {
+            base_coefficients[row][i] = (order + i - deg) as f64 * base_coefficients[row - 1][i];
+            i += 1;
+        }
+        order -= 1;
+        row += 1;
+    }
+    base_coefficients
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::common::{binomial_coefficient, compute_blending_matrix, compute_blending_matrix_c};
+    use crate::common::{
+        binomial_coefficient, compute_base_coefficients, compute_base_coefficients_c,
+        compute_blending_matrix, compute_blending_matrix_c,
+    };
 
     #[test]
     fn test_binomial_coefficient() {
@@ -117,6 +157,18 @@ mod tests {
         const N: usize = 5;
         let m0 = compute_blending_matrix(N, false);
         let m1 = compute_blending_matrix_c::<N>(false);
+        for i in 0..N {
+            for j in 0..N {
+                assert!((m0[(i, j)] - m1[i][j]).abs() < 1e-10);
+            }
+        }
+    }
+
+    #[test]
+    fn test_compute_base_coefficients() {
+        const N: usize = 5;
+        let m0 = compute_base_coefficients(N);
+        let m1 = compute_base_coefficients_c::<N>();
         for i in 0..N {
             for j in 0..N {
                 assert!((m0[(i, j)] - m1[i][j]).abs() < 1e-10);
