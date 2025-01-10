@@ -1,4 +1,7 @@
+use std::f64::consts::PI;
+
 use nalgebra as na;
+use tiny_solver::manifold::so3::SO3;
 
 pub const fn binomial_coefficient(n: usize, k: usize) -> usize {
     if k > n {
@@ -74,7 +77,7 @@ pub const fn compute_blending_matrix_c<const N: usize>(cumulative: bool) -> [[f6
     m
 }
 
-pub fn compute_blending_matrix(n: usize, cumulative: bool) -> na::DMatrix<f64> {
+pub fn compute_blending_matrix<T: na::RealField>(n: usize, cumulative: bool) -> na::DMatrix<T> {
     let mut m = na::DMatrix::zeros(n, n);
     let factorial = (1..n).reduce(|acc, e| acc * e).unwrap() as f64;
     for i in 0..n {
@@ -96,8 +99,7 @@ pub fn compute_blending_matrix(n: usize, cumulative: bool) -> na::DMatrix<f64> {
             }
         }
     }
-
-    m
+    m.cast()
 }
 
 pub fn compute_base_coefficients(n: usize) -> na::DMatrix<f64> {
@@ -155,7 +157,7 @@ mod tests {
     #[test]
     fn test_compute_blending_matrix() {
         const N: usize = 5;
-        let m0 = compute_blending_matrix(N, false);
+        let m0 = compute_blending_matrix::<f64>(N, false);
         let m1 = compute_blending_matrix_c::<N>(false);
         for i in 0..N {
             for j in 0..N {
