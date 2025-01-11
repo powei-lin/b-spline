@@ -46,7 +46,6 @@ fn main() {
 
     let rotation_bspline = SO3Bspline::<5>::from_rotation_vectors(&ts_ns, &rvecs, spacing_ns);
     println!("knots: {}", rotation_bspline.knots.len());
-
     let recording = rerun::RecordingStreamBuilder::new("pose").spawn().unwrap();
 
     let start_t = pose_vec.first().unwrap().0;

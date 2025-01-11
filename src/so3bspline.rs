@@ -7,6 +7,7 @@ use crate::traits::*;
 use nalgebra as na;
 use tiny_solver::loss_functions::HuberLoss;
 use tiny_solver::manifold::{AutoDiffManifold, Manifold};
+use tiny_solver::LevenbergMarquardtOptimizer;
 use tiny_solver::{
     self, manifold::so3::SO3, sparse::LinearSolverType, GaussNewtonOptimizer, Optimizer,
     OptimizerOptions,
@@ -92,7 +93,6 @@ impl<T: na::RealField> tiny_solver::factors::Factor<T> for RotationCost {
     fn residual_func(&self, params: &[nalgebra::DVector<T>]) -> nalgebra::DVector<T> {
         let r = so3_from_u_and_knots(self.u, params, &self.blending_matrix);
         let target = self.rvec.cast::<T>().to_dvec();
-        // r - target
         let target = SO3::exp(target.as_view());
         (target.inverse() * r).log()
     }
@@ -124,13 +124,7 @@ impl<const N: usize> SO3Bspline<N> {
             );
         }
         let optimizer = GaussNewtonOptimizer::default();
-        let optimizer_options = OptimizerOptions {
-            linear_solver_type: LinearSolverType::SparseQR,
-            ..Default::default()
-        };
-        let result = optimizer
-            .optimize(&problem, &initial_values, Some(optimizer_options))
-            .unwrap();
+        let result = optimizer.optimize(&problem, &initial_values, None).unwrap();
         self.knots = (0..self.knots.len())
             .map(|i| {
                 let var_name = format!("r{}", i);
@@ -167,27 +161,19 @@ impl<const N: usize> SO3Bspline<N> {
     pub fn get_velocity(&self, timestamp_ns: u64) -> na::Vector3<f64> {
         let (u, idx) = self.get_u_and_index(timestamp_ns);
 
-        let ud = if u == 0.0 {
-            let mut v = na::DVector::zeros(N);
-            v[0] = 1.0;
-            v
-        } else {
-            na::DVector::from_fn(N, |i, _| u.powi(i as i32) / u)
-        };
+        let coeff = &self.blending_matrix * Self::base_coeffs_with_time::<0>(u);
         let d_tn_s = self.spacing_ns as f64 / 1e9;
-        let kp_v =
-            &self.blending_matrix * (&self.first_derivative_bases.component_mul(&ud)) / d_tn_s;
+        let dcoeff = d_tn_s * &self.blending_matrix * Self::base_coeffs_with_time::<1>(u);
         let mut w = na::Vector3::<f64>::zeros();
         for j in 0..(N - 1) {
             let p0 = self.knots[idx + j].to_so3();
             let p1 = self.knots[idx + j + 1].to_so3();
             let r01 = p0.inverse() * p1;
             let delta = r01.log();
-            let ww = ((-1.0 * &delta) * kp_v[j + 1]).to_so3();
+            let ww = ((-1.0 * &delta) * coeff[j + 1]).to_so3();
             w = &ww * w.as_view();
-            w += delta * kp_v[j + 1];
+            w += delta * dcoeff[j + 1];
         }
-        println!("vel: u {} w {}", u, w);
         w
     }
 
@@ -235,5 +221,18 @@ impl<const N: usize> SO3Bspline<N> {
         };
         bspline.fit(timestamps_ns, rvecs);
         bspline
+    }
+    fn base_coeffs_with_time<const DERIVATIVE: usize>(u: f64) -> na::DVector<f64> {
+        let mut res = na::DVector::zeros(N);
+        let base_coefficients = compute_base_coefficients(N);
+        if DERIVATIVE < N {
+            res[DERIVATIVE] = base_coefficients[(DERIVATIVE, DERIVATIVE)];
+            let mut ti = u;
+            for j in (DERIVATIVE + 1)..N {
+                res[j] = base_coefficients[(DERIVATIVE, j)] * ti;
+                ti *= u;
+            }
+        }
+        res
     }
 }
