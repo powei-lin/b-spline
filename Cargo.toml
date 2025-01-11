@@ -2,6 +2,25 @@
 name = "b-spline"
 version = "0.1.0"
 edition = "2021"
+authors = ["Powei Lin <poweilin1994@gmail.com>"]
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+description = "B-spline"
+homepage = "https://github.com/powei-lin/b-spline"
+repository = "https://github.com/powei-lin/b-spline"
+keywords = ["b-spline", "imu"]
+categories = ["data-structures", "science", "mathematics"]
+exclude = [
+    "/.github/*",
+    "*.ipynb",
+    "scripts/*",
+    "examples/*",
+    "tests/*",
+    "venv/*",
+    "data/*",
+    ".ruff_cache/*",
+    "docs/*",
+]
 
 [dependencies]
 nalgebra = "0.33.2"
