@@ -7,11 +7,7 @@ use crate::traits::*;
 use nalgebra as na;
 use tiny_solver::loss_functions::HuberLoss;
 use tiny_solver::manifold::{AutoDiffManifold, Manifold};
-use tiny_solver::LevenbergMarquardtOptimizer;
-use tiny_solver::{
-    self, manifold::so3::SO3, sparse::LinearSolverType, GaussNewtonOptimizer, Optimizer,
-    OptimizerOptions,
-};
+use tiny_solver::{self, manifold::so3::SO3, GaussNewtonOptimizer, Optimizer};
 struct RvecManifold;
 impl<T: na::RealField> AutoDiffManifold<T> for RvecManifold {
     fn plus(
@@ -45,14 +41,6 @@ pub struct SO3Bspline<const N: usize> {
     pub knots: Vec<[f64; 3]>,
     blending_matrix: na::DMatrix<f64>,
     first_derivative_bases: na::DVector<f64>,
-}
-
-fn f64_power(num: f64, power: usize) -> f64 {
-    let mut out = 1.0;
-    for _ in 0..power {
-        out *= num;
-    }
-    out
 }
 
 pub fn so3_from_u_and_knots<T: na::RealField>(

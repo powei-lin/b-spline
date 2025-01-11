@@ -1,7 +1,4 @@
-use std::f64::consts::PI;
-
 use nalgebra as na;
-use tiny_solver::manifold::so3::SO3;
 
 pub const fn binomial_coefficient(n: usize, k: usize) -> usize {
     if k > n {
