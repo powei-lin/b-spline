@@ -46,20 +46,28 @@ pub struct SO3Bspline<const N: usize> {
     first_derivative_bases: na::DVector<f64>,
 }
 
+fn f64_power(num: f64, power: usize) -> f64 {
+    let mut out = 1.0;
+    for _ in 0..power {
+        out *= num;
+    }
+    out
+}
+
 pub fn so3_from_u_and_knots<T: na::RealField>(
     u: f64,
     knots: &[na::DVector<T>],
     blending_matrix: &na::DMatrix<f64>,
 ) -> SO3<T> {
     let n = knots.len();
-    let uv = na::DVector::from_fn(n, |i, _| u.powi(i as i32)).cast();
+    let uv = na::DVector::from_fn(n, |i, _| u.powi(i as i32));
     let kv = (blending_matrix * uv).cast::<T>();
     let mut r = knots[0].to_so3();
     for j in 1..n {
         let k = kv[j].clone();
-        let r_j = knots[j].to_rotation3();
-        let r_j_minus_inv = knots[j - 1].to_rotation3().inverse();
-        let rj_vec = (r_j * r_j_minus_inv).scaled_axis() * k;
+        let r_j = knots[j].to_so3();
+        let r_j_minus_inv = knots[j - 1].to_so3().inverse();
+        let rj_vec = (r_j_minus_inv * r_j).log() * k;
         r = r * rj_vec.to_so3();
     }
     r
@@ -140,8 +148,12 @@ impl<const N: usize> SO3Bspline<N> {
     }
 
     pub fn get_u_and_index(&self, timestamp_ns: u64) -> (f64, usize) {
+        // println!("req: {}", timestamp_ns);
         let time_offset = timestamp_ns - self.timestamp_start_ns;
+        // println!("offset {}", time_offset);
+        // println!("mod {}", time_offset % self.spacing_ns);
         let u = (time_offset % self.spacing_ns) as f64 / self.spacing_ns as f64;
+        // println!("u {}", u);
         let idx = time_offset / self.spacing_ns;
         (u, idx as usize)
     }
@@ -154,7 +166,14 @@ impl<const N: usize> SO3Bspline<N> {
 
     pub fn get_velocity(&self, timestamp_ns: u64) -> na::Vector3<f64> {
         let (u, idx) = self.get_u_and_index(timestamp_ns);
-        let ud = na::DVector::from_fn(N, |i, _| u.powi(i as i32) / u);
+
+        let ud = if u == 0.0 {
+            let mut v = na::DVector::zeros(N);
+            v[0] = 1.0;
+            v
+        } else {
+            na::DVector::from_fn(N, |i, _| u.powi(i as i32) / u)
+        };
         let d_tn_s = self.spacing_ns as f64 / 1e9;
         let kp_v =
             &self.blending_matrix * (&self.first_derivative_bases.component_mul(&ud)) / d_tn_s;
@@ -168,6 +187,7 @@ impl<const N: usize> SO3Bspline<N> {
             w = &ww * w.as_view();
             w += delta * kp_v[j + 1];
         }
+        println!("vel: u {} w {}", u, w);
         w
     }
 

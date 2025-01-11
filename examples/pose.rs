@@ -42,12 +42,43 @@ fn main() {
     pose_vec.sort_by(|a, b| a.0.cmp(&b.0));
     let (ts_ns, rvecs): (Vec<_>, Vec<_>) = rvecs_with_t.iter().map(|a| (a.0, a.1)).unzip();
 
-    let spacing_ns = 400_000_000;
+    let spacing_ns = 250_000_000;
 
     let rotation_bspline = SO3Bspline::<5>::from_rotation_vectors(&ts_ns, &rvecs, spacing_ns);
     println!("knots: {}", rotation_bspline.knots.len());
 
     let recording = rerun::RecordingStreamBuilder::new("pose").spawn().unwrap();
+
+    let start_t = pose_vec.first().unwrap().0;
+    let end_t = pose_vec.last().unwrap().0;
+    let delta_t = 10_000_000;
+    let mut t = start_t;
+    while t <= end_t {
+        recording.set_time_nanos("stable", t as i64);
+        let r = rotation_bspline.get_rotation(t);
+        let rvec = r.log();
+        recording
+            .log("/rvec/x/bpline", &rerun::Scalar::new(rvec[0]))
+            .unwrap();
+        recording
+            .log("/rvec/y/bpline", &rerun::Scalar::new(rvec[1]))
+            .unwrap();
+        recording
+            .log("/rvec/z/bpline", &rerun::Scalar::new(rvec[2]))
+            .unwrap();
+        let gyro = rotation_bspline.get_velocity(t);
+        recording
+            .log("/gyro/x", &rerun::Scalar::new(gyro[0]))
+            .unwrap();
+        recording
+            .log("/gyro/y", &rerun::Scalar::new(gyro[1]))
+            .unwrap();
+        recording
+            .log("/gyro/z", &rerun::Scalar::new(gyro[2]))
+            .unwrap();
+        t += delta_t;
+    }
+
     for p in &pose_vec {
         recording.set_time_nanos("stable", p.0 as i64);
         recording
@@ -77,25 +108,6 @@ fn main() {
             .unwrap();
         recording
             .log("/rvec/z/lidar", &rerun::Scalar::new(p.1.rvec[2]))
-            .unwrap();
-        recording
-            .log("/rvec/x/bpline", &rerun::Scalar::new(rvec[0]))
-            .unwrap();
-        recording
-            .log("/rvec/y/bpline", &rerun::Scalar::new(rvec[1]))
-            .unwrap();
-        recording
-            .log("/rvec/z/bpline", &rerun::Scalar::new(rvec[2]))
-            .unwrap();
-        let gyro = rotation_bspline.get_velocity(p.0);
-        recording
-            .log("/gyro/x", &rerun::Scalar::new(gyro[0]))
-            .unwrap();
-        recording
-            .log("/gyro/y", &rerun::Scalar::new(gyro[1]))
-            .unwrap();
-        recording
-            .log("/gyro/z", &rerun::Scalar::new(gyro[2]))
             .unwrap();
     }
 }
