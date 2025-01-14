@@ -8,7 +8,8 @@ use nalgebra as na;
 use tiny_solver::loss_functions::HuberLoss;
 use tiny_solver::manifold::{AutoDiffManifold, Manifold};
 use tiny_solver::{self, manifold::so3::SO3, GaussNewtonOptimizer, Optimizer};
-struct RvecManifold;
+
+pub struct RvecManifold;
 impl<T: na::RealField> AutoDiffManifold<T> for RvecManifold {
     fn plus(
         &self,
@@ -151,7 +152,7 @@ impl<const N: usize> SO3Bspline<N> {
 
         let coeff = &self.blending_matrix * Self::base_coeffs_with_time::<0>(u);
         let d_tn_s = self.spacing_ns as f64 / 1e9;
-        let dcoeff = d_tn_s * &self.blending_matrix * Self::base_coeffs_with_time::<1>(u);
+        let dcoeff = 1.0 / d_tn_s * &self.blending_matrix * Self::base_coeffs_with_time::<1>(u);
         let mut w = na::Vector3::<f64>::zeros();
         for j in 0..(N - 1) {
             let p0 = self.knots[idx + j].to_so3();
