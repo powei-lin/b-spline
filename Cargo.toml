@@ -1,6 +1,6 @@
 [package]
 name = "b-spline"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Powei Lin <poweilin1994@gmail.com>"]
 readme = "README.md"
@@ -24,7 +24,7 @@ exclude = [
 
 [dependencies]
 nalgebra = "0.33.2"
-tiny-solver = "0.14.2"
+tiny-solver = "0.15.1"
 
 [dev-dependencies]
 env_logger = "0.11.6"
