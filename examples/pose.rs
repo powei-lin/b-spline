@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use b_spline::so3bspline::SO3Bspline;
-use nalgebra as na;
 use serde::{Deserialize, Serialize};
+use tiny_solver::na;
 
 fn rtvec_to_transform(rvec: &[f64; 3], tvec: &[f64; 3]) -> na::Isometry3<f64> {
     na::Isometry3::new(
