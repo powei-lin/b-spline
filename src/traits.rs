@@ -1,5 +1,5 @@
-use nalgebra as na;
 use tiny_solver::manifold::so3::SO3;
+use tiny_solver::na;
 
 pub trait ToSO3<T: na::RealField> {
     fn to_rotation3(&self) -> na::Rotation3<T>;
@@ -7,7 +7,7 @@ pub trait ToSO3<T: na::RealField> {
 }
 
 impl<T: na::RealField> ToSO3<T> for na::DVector<T> {
-    fn to_rotation3(&self) -> nalgebra::Rotation3<T> {
+    fn to_rotation3(&self) -> na::Rotation3<T> {
         na::Rotation3::from_scaled_axis(na::Vector3::new(
             self[0].clone(),
             self[1].clone(),
@@ -20,7 +20,7 @@ impl<T: na::RealField> ToSO3<T> for na::DVector<T> {
 }
 
 impl<T: na::RealField> ToSO3<T> for [T; 3] {
-    fn to_rotation3(&self) -> nalgebra::Rotation3<T> {
+    fn to_rotation3(&self) -> na::Rotation3<T> {
         na::Rotation3::from_scaled_axis(na::Vector3::new(
             self[0].clone(),
             self[1].clone(),
@@ -32,7 +32,7 @@ impl<T: na::RealField> ToSO3<T> for [T; 3] {
     }
 }
 impl<T: na::RealField> ToSO3<T> for na::Vector3<T> {
-    fn to_rotation3(&self) -> nalgebra::Rotation3<T> {
+    fn to_rotation3(&self) -> na::Rotation3<T> {
         na::Rotation3::from_scaled_axis(na::Vector3::new(
             self.x.clone(),
             self.y.clone(),
@@ -45,14 +45,22 @@ impl<T: na::RealField> ToSO3<T> for na::Vector3<T> {
 }
 
 impl<T: na::RealField> ToDVec<T> for [T; 3] {
-    fn to_dvec(&self) -> nalgebra::DVector<T> {
-        na::dvector![self[0].clone(), self[1].clone(), self[2].clone()]
+    fn to_dvec(&self) -> na::DVector<T> {
+        na::DVector::<_>::from_vec_storage(na::VecStorage::new(
+            na::Dyn(3usize),
+            na::Const::<1>,
+            vec![self[0].clone(), self[1].clone(), self[2].clone()],
+        ))
     }
 }
 
 impl<T: na::RealField> ToDVec<T> for na::Vector3<T> {
-    fn to_dvec(&self) -> nalgebra::DVector<T> {
-        na::dvector![self[0].clone(), self[1].clone(), self[2].clone()]
+    fn to_dvec(&self) -> na::DVector<T> {
+        na::DVector::<_>::from_vec_storage(na::VecStorage::new(
+            na::Dyn(3usize),
+            na::Const::<1>,
+            vec![self[0].clone(), self[1].clone(), self[2].clone()],
+        ))
     }
 }
 

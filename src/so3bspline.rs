@@ -4,26 +4,17 @@ use std::sync::Arc;
 
 use crate::common::{compute_base_coefficients, compute_blending_matrix};
 use crate::traits::*;
-use nalgebra as na;
 use tiny_solver::loss_functions::HuberLoss;
 use tiny_solver::manifold::{AutoDiffManifold, Manifold};
-use tiny_solver::{self, manifold::so3::SO3, GaussNewtonOptimizer, Optimizer};
+use tiny_solver::{self, manifold::so3::SO3, na, GaussNewtonOptimizer, Optimizer};
 
 pub struct RvecManifold;
 impl<T: na::RealField> AutoDiffManifold<T> for RvecManifold {
-    fn plus(
-        &self,
-        x: nalgebra::DVectorView<T>,
-        delta: nalgebra::DVectorView<T>,
-    ) -> nalgebra::DVector<T> {
+    fn plus(&self, x: na::DVectorView<T>, delta: na::DVectorView<T>) -> na::DVector<T> {
         (SO3::exp(x) * SO3::exp(delta)).log()
     }
 
-    fn minus(
-        &self,
-        y: nalgebra::DVectorView<T>,
-        x: nalgebra::DVectorView<T>,
-    ) -> nalgebra::DVector<T> {
+    fn minus(&self, y: na::DVectorView<T>, x: na::DVectorView<T>) -> na::DVector<T> {
         let y_so3 = SO3::from_vec(y);
         let x_so3_inv = SO3::from_vec(x).inverse();
         (x_so3_inv * y_so3).log()
@@ -79,7 +70,7 @@ impl RotationCost {
 }
 
 impl<T: na::RealField> tiny_solver::factors::Factor<T> for RotationCost {
-    fn residual_func(&self, params: &[nalgebra::DVector<T>]) -> nalgebra::DVector<T> {
+    fn residual_func(&self, params: &[na::DVector<T>]) -> na::DVector<T> {
         let r = so3_from_u_and_knots(self.u, params, &self.blending_matrix);
         let target = self.rvec.cast::<T>().to_dvec();
         let target = SO3::exp(target.as_view());

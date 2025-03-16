@@ -1,4 +1,4 @@
-use nalgebra as na;
+use tiny_solver::na;
 
 pub const fn binomial_coefficient(n: usize, k: usize) -> usize {
     if k > n {
