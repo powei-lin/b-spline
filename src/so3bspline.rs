@@ -6,7 +6,7 @@ use crate::common::{compute_base_coefficients, compute_blending_matrix};
 use crate::traits::*;
 use tiny_solver::loss_functions::HuberLoss;
 use tiny_solver::manifold::{AutoDiffManifold, Manifold};
-use tiny_solver::{self, manifold::so3::SO3, na, GaussNewtonOptimizer, Optimizer};
+use tiny_solver::{self, GaussNewtonOptimizer, Optimizer, manifold::so3::SO3, na};
 
 pub struct RvecManifold;
 impl<T: na::RealField> AutoDiffManifold<T> for RvecManifold {
@@ -27,6 +27,7 @@ impl Manifold for RvecManifold {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct SO3Bspline<const N: usize> {
     timestamp_start_ns: u64,
     spacing_ns: u64,

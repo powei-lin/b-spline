@@ -53,33 +53,39 @@ fn main() {
     let delta_t = 10_000_000;
     let mut t = start_t;
     while t <= end_t {
-        recording.set_time_nanos("stable", t as i64);
+        recording.set_time(
+            "stable",
+            rerun::TimeCell::from_timestamp_nanos_since_epoch(t as i64),
+        );
         let r = rotation_bspline.get_rotation(t);
         let rvec = r.log();
         recording
-            .log("/rvec/x/bpline", &rerun::Scalar::new(rvec[0]))
+            .log("/rvec/x/bpline", &rerun::Scalars::single(rvec[0]))
             .unwrap();
         recording
-            .log("/rvec/y/bpline", &rerun::Scalar::new(rvec[1]))
+            .log("/rvec/y/bpline", &rerun::Scalars::single(rvec[1]))
             .unwrap();
         recording
-            .log("/rvec/z/bpline", &rerun::Scalar::new(rvec[2]))
+            .log("/rvec/z/bpline", &rerun::Scalars::single(rvec[2]))
             .unwrap();
         let gyro = rotation_bspline.get_velocity(t);
         recording
-            .log("/gyro/x", &rerun::Scalar::new(gyro[0]))
+            .log("/gyro/x", &rerun::Scalars::single(gyro[0]))
             .unwrap();
         recording
-            .log("/gyro/y", &rerun::Scalar::new(gyro[1]))
+            .log("/gyro/y", &rerun::Scalars::single(gyro[1]))
             .unwrap();
         recording
-            .log("/gyro/z", &rerun::Scalar::new(gyro[2]))
+            .log("/gyro/z", &rerun::Scalars::single(gyro[2]))
             .unwrap();
         t += delta_t;
     }
 
     for p in &pose_vec {
-        recording.set_time_nanos("stable", p.0 as i64);
+        recording.set_time(
+            "stable",
+            rerun::TimeCell::from_timestamp_nanos_since_epoch(p.0 as i64),
+        );
         recording
             .log(
                 "pose",
@@ -100,13 +106,13 @@ fn main() {
             )
             .unwrap();
         recording
-            .log("/rvec/x/lidar", &rerun::Scalar::new(p.1.rvec[0]))
+            .log("/rvec/x/lidar", &rerun::Scalars::single(p.1.rvec[0]))
             .unwrap();
         recording
-            .log("/rvec/y/lidar", &rerun::Scalar::new(p.1.rvec[1]))
+            .log("/rvec/y/lidar", &rerun::Scalars::single(p.1.rvec[1]))
             .unwrap();
         recording
-            .log("/rvec/z/lidar", &rerun::Scalar::new(p.1.rvec[2]))
+            .log("/rvec/z/lidar", &rerun::Scalars::single(p.1.rvec[2]))
             .unwrap();
     }
 }
